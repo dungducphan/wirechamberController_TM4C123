@@ -36,16 +36,8 @@ void Timer0IntHandler(void) {
     // Clear the timer interrupt.
     ROM_TimerIntClear(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
 
-    // Reset SELECT bits
-    if (HWREGBITW(&g_ui32SelectBits, 5) == 1) {
-        g_ui32SelectBits = 0;
-    }
-
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, HWREGBITW(&g_ui32SelectBits, 0));
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, HWREGBITW(&g_ui32SelectBits, 1));
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, HWREGBITW(&g_ui32SelectBits, 2));
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_4, HWREGBITW(&g_ui32SelectBits, 3));
-    GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_5, HWREGBITW(&g_ui32SelectBits, 4));
+    // Output the value of SELECT bits to PE0-4 pins
+    GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4, g_ui32SelectBits);
 
     // Update select bits
     g_ui32SelectBits++;
@@ -91,14 +83,10 @@ int main(void) {
     UARTprintf("Hello, world!\n");
 
     // Enable the GPIO port that is used for the on-board LED.
-    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+    MAP_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
 
-    // Enable the GPIO pins for the LED (PF1).
-    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_1);
-    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_2);
-    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_3);
-    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_4);
-    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_5);
+    // Enable the GPIO pins for SELECT pins
+    MAP_GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4);
 
     // Enable the peripherals used by this example.
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
@@ -108,7 +96,7 @@ int main(void) {
 
     // Configure the two 32-bit periodic timers.
     ROM_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
-    ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, ROM_SysCtlClockGet() / 8);
+    ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, (ROM_SysCtlClockGet() / 1000000) - 1);
 
     // Setup the interrupts for the timer timeouts.
     ROM_IntEnable(INT_TIMER0A);
